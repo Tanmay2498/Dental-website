@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Aura Dental Studio - Interactive Client Application
  * High-performance, secure, responsive ES6 architecture.
  */
@@ -486,25 +486,61 @@ function initBookingWizard() {
         return;
       }
 
-      // Read form fields securely
-      const patientName = document.getElementById('patientName')?.value.trim() || 'Valued Patient';
-      const patientPhone = document.getElementById('patientPhone')?.value.trim() || 'N/A';
-      const patientEmail = document.getElementById('patientEmail')?.value.trim() || 'N/A';
+      // Read form fields securely with strict boundary sanitization
+      const nameInput = document.getElementById('patientName');
+      const phoneInput = document.getElementById('patientPhone');
+      const emailInput = document.getElementById('patientEmail');
+      const noteInput = document.getElementById('patientNote');
+
+      const rawName = nameInput?.value.trim() || '';
+      const rawPhone = phoneInput?.value.trim() || '';
+      const rawEmail = emailInput?.value.trim() || '';
+      const rawNote = noteInput?.value.trim() || '';
+
+      // Strict Validation: Name (2-60 chars, letters/spaces/hyphens)
+      const nameRegex = /^[a-zA-Z\s\-.']{2,60}$/;
+      if (!nameRegex.test(rawName)) {
+        alert('Please enter a valid patient full name (letters and spaces only).');
+        nameInput?.focus();
+        return;
+      }
+
+      // Strict Validation: Email (RFC format, max 100 chars)
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(rawEmail) || rawEmail.length > 100) {
+        alert('Please enter a valid email address.');
+        emailInput?.focus();
+        return;
+      }
+
+      // Strict Validation: Phone (10-18 chars format)
+      const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
+      if (!phoneRegex.test(rawPhone)) {
+        alert('Please enter a valid phone number (e.g., (212) 555-0123).');
+        phoneInput?.focus();
+        return;
+      }
+
+      // Sanitized Note (max 400 chars, stripped of executable tags)
+      const sanitizedNote = rawNote.slice(0, 400).replace(/[<>]/g, '');
+
       const serviceName = document.getElementById('wizardService')?.selectedOptions[0]?.text || 'General Checkup';
       const doctorName = document.getElementById('wizardDoctor')?.selectedOptions[0]?.text || 'Next Available Specialist';
       const apptDate = wizardDate?.value || new Date().toISOString().split('T')[0];
 
-      // Generate secure unique appointment booking code
-      const bookingCode = 'AD-' + Math.floor(100000 + Math.random() * 900000);
+      // Cryptographically sound appointment booking code
+      const array = new Uint32Array(1);
+      window.crypto.getRandomValues(array);
+      const bookingCode = 'AD-' + (100000 + (array[0] % 900000));
 
-      // Populate confirmation modal securely (DOM text content to prevent XSS)
+      // Populate confirmation modal securely (DOM textContent strictly prevents XSS)
       const confName = document.getElementById('confPatientName');
       const confService = document.getElementById('confService');
       const confDoctor = document.getElementById('confDoctor');
       const confDateTime = document.getElementById('confDateTime');
       const confCode = document.getElementById('confCode');
 
-      if (confName) confName.textContent = patientName;
+      if (confName) confName.textContent = rawName;
       if (confService) confService.textContent = serviceName;
       if (confDoctor) confDoctor.textContent = doctorName;
       if (confDateTime) confDateTime.textContent = `${apptDate} at ${selectedTimeSlot}`;
